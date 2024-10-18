@@ -1,0 +1,95 @@
+---
+title: "Marketing Analytics HW1"
+output:
+  word_document: default
+  pdf_document: default
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+Innovation: Cruz BlenderCap
+SPECIAL MENTION: Smoothie and shake blender options abound, but the Cruz Blender Cap is distinctive because it can turn many popular wide-mouth water bottles into portable blenders, and offers greater power compared to other models on the market.
+
+Look alike: Blenders
+
+The Cruz BlenderCap stands out as an innovative and portable blending solution, allowing users to turn their regular wide-mouth water bottles into powerful blenders. In contrast, traditional blenders, while effective, are typically bulkier and confined to kitchen spaces. The Cruz BlenderCap takes portability and convenience to a new level, making it ideal for people who want to blend smoothies, shakes, or other beverages on the go. Its cordless design and compatibility with various water bottles make it distinct from traditional, stationary blenders.
+
+In terms of technology, traditional blenders have evolved to offer high-powered blending, but they are limited by their size, weight, and the need for dedicated containers. The Cruz BlenderCap, however, leverages modern battery technology and compact design to offer similar blending power in a more versatile, portable form. This innovation opens new market possibilities, particularly for health-conscious, active consumers who value convenience and mobility, whereas traditional blenders are more suited for home use. The Cruz BlenderCap offers a solution for modern, on-the-go lifestyles, thus expanding the market beyond the kitchen.
+
+```{r}
+#install.packages("readxl")
+#install.packages("cli")
+#install.packages("ggplot")
+#install.packages("gridExtra")
+#install.packages("tidyverse")
+#install.packages("farver")
+library(tidyverse)
+library(ggplot2)
+library(gridExtra)
+library(readxl)
+```
+
+```{r}
+getwd()
+setwd("/Users/apple/Downloads")
+getwd()
+blender_sales_data <- read_excel("blender_sales.xlsx")
+```
+
+
+```{r}
+sales <- blender_sales_data$`Annual sales`
+t <- 1:length(sales)
+
+bass_m <- nls(sales ~ m * (((p + q)^2 / p) * exp(-(p + q) * t)) / ((1 + (q / p) * exp(-(p + q) * t))^2),
+              start = list(m = sum(sales), p = 0.02, q = 0.4))
+
+summary(bass_m)
+```
+
+```{r}
+p <- coef(bass_m)["p"]
+q <- coef(bass_m)["q"]
+
+cat("Coefficient of innovation (p):", format(round(p, 5), nsmall = 5), "\n")
+cat("Coefficient of imitation (q):", format(round(q, 5), nsmall = 5), "\n")
+```
+
+According to Cognitive Market Research, the global Household Blender market size is USD 2158.2 million in 2024 (source: https://www.cognitivemarketresearch.com/household-blender-market-report) and the average price of blenders is around 100$, this means approximately 21.58 million units are sold globally. Cruz BlenderCap is bit pricier than the average blender, therefore let's assume only around 60% of people will be able to afford it or would consider buying it for that price. Therefore, it equals to 12,948,000 units.
+Then let's assume only 20% of that will actually buy the product, therefore we get 2,589,600, which we can consider as our potential market for the chosen product.
+
+```{r}
+bass.f <- function(t, p, q) {
+  ((p + q)^2 / p) * exp(-(p + q) * t) / (1 + (q / p) * exp(-(p + q) * t))^2
+}
+
+bass.F <- function(t, p, q) {
+  (1 - exp(-(p + q) * t)) / (1 + (q / p) * exp(-(p + q) * t))
+}
+
+m <- 2589600 
+t <- 1:15    
+
+pred <- bass.f(t = t, p = p, q = q) * m
+pred_df <- data.frame(t = t, pred = pred)
+
+pred1 <- bass.F(t = t, p = p, q = q) 
+pred1_df <- data.frame(t = t, pred = pred1)
+
+p1 <- ggplot(pred_df, aes(x = t, y = pred)) +
+  geom_line(color = "blue") +
+  ggtitle("Number of Adoptions at Time t") +
+  xlab("Years") + ylab("Number of Adopters") +
+  scale_y_continuous(labels = scales::comma)
+
+p2 <- ggplot(pred1_df, aes(x = t, y = pred)) +
+  geom_line(color = "green") +
+  ggtitle("Cumulative Adoptions") +
+  xlab("Years") + ylab("Cumulative Adoption") +
+  scale_y_continuous()
+
+grid.arrange(p1, p2, ncol = 2)
+```
+
+The cumulative adoption curve shows a steady increase in adopters over time, with growth slowing down as the market becomes saturated. This pattern is consistent with the Bass Diffusion Model, where early adopters are followed by imitators, leading to peak adoption and eventually tapering off as most of the potential market has adopted the innovation.
